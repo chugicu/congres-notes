@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CongrèsNotes">
+<title>CongrèsNotes</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<style>
+  :root {
+    --ink: #1a1a2e; --ink2: #16213e;
+    --accent: #e94560; --accent2: #f5a623;
+    --surface: #fff; --surface2: #f8f7f4; --surface3: #eeecea;
+    --border: #e0ddd8; --text: #2d2d2d; --text2: #6b6b6b;
+    --success: #27ae60; --radius: 16px;
+    --shadow: 0 4px 24px rgba(26,26,46,0.10);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--surface2); color: var(--text); min-height: 100vh; padding-bottom: 40px; }
+
+  /* ── Écran config (première fois) ── */
+  .config-screen {
+    position: fixed; inset: 0; background: var(--ink);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 32px; z-index: 200;
+  }
+  .config-screen.hidden { display: none; }
+  .config-logo { font-family: 'DM Serif Display', serif; font-size: 36px; color: white; margin-bottom: 8px; }
+  .config-logo span { color: var(--accent); }
+  .config-sub { color: rgba(255,255,255,0.5); font-size: 13px; margin-bottom: 32px; text-align: center; }
+  .config-label { color: rgba(255,255,255,0.7); font-size: 13px; font-weight: 500; align-self: flex-start; margin-bottom: 6px; width: 100%; max-width: 320px; }
+  .config-input {
+    width: 100%; max-width: 320px; padding: 14px 16px;
+    border: 1.5px solid rgba(255,255,255,0.15);
+    border-radius: 12px; background: rgba(255,255,255,0.08); color: white;
+    font-family: 'DM Sans', sans-serif; font-size: 16px; outline: none; margin-bottom: 12px;
+  }
+  .config-input::placeholder { color: rgba(255,255,255,0.3); }
+  .config-hint { color: rgba(255,255,255,0.35); font-size: 11px; max-width: 320px; margin-bottom: 20px; line-height: 1.5; }
+  .config-btn {
+    width: 100%; max-width: 320px; padding: 16px;
+    background: var(--accent); color: white; border: none; border-radius: 12px;
+    font-family: 'DM Sans', sans-serif; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+
+  /* ── Écran identification ── */
+  .id-screen {
+    position: fixed; inset: 0; background: var(--ink);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 32px; z-index: 100;
+  }
+  .id-screen.hidden { display: none; }
+  .id-logo { font-family: 'DM Serif Display', serif; font-size: 36px; color: white; margin-bottom: 8px; }
+  .id-logo span { color: var(--accent); }
+  .id-sub { color: rgba(255,255,255,0.5); font-size: 14px; margin-bottom: 40px; }
+  .id-label { color: rgba(255,255,255,0.7); font-size: 13px; font-weight: 500; align-self: flex-start; margin-bottom: 8px; width: 100%; max-width: 320px; }
+  .id-input {
+    width: 100%; max-width: 320px; padding: 16px;
+    border: 1.5px solid rgba(255,255,255,0.15);
+    border-radius: 12px; background: rgba(255,255,255,0.08); color: white;
+    font-family: 'DM Sans', sans-serif; font-size: 18px; outline: none; margin-bottom: 16px;
+  }
+  .id-input::placeholder { color: rgba(255,255,255,0.3); }
+  .id-btn {
+    width: 100%; max-width: 320px; padding: 16px;
+    background: var(--accent); color: white; border: none; border-radius: 12px;
+    font-family: 'DM Sans', sans-serif; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .id-existing { margin-top: 24px; width: 100%; max-width: 320px; }
+  .id-existing-title { color: rgba(255,255,255,0.4); font-size: 12px; text-align: center; margin-bottom: 10px; }
+  .id-user-chip {
+    display: inline-block; margin: 4px; padding: 8px 16px;
+    background: rgba(255,255,255,0.1); color: white; border-radius: 20px;
+    font-size: 14px; cursor: pointer; border: 1.5px solid rgba(255,255,255,0.15);
+  }
+
+  /* ── Header ── */
+  .header { background: var(--ink); color: white; padding: 52px 20px 20px; position: relative; overflow: hidden; }
+  .header::before { content:''; position:absolute; top:-40px; right:-40px; width:180px; height:180px; border-radius:50%; background:rgba(233,69,96,0.15); }
+  .header-top { display: flex; align-items: flex-start; justify-content: space-between; position: relative; z-index: 1; }
+  .header-title { font-family: 'DM Serif Display', serif; font-size: 26px; letter-spacing: -0.5px; }
+  .header-title span { color: var(--accent); }
+  .header-date { font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 3px; font-weight: 300; }
+  .user-badge { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.1); border-radius: 20px; padding: 6px 12px; cursor: pointer; flex-shrink: 0; }
+  .user-avatar { width: 26px; height: 26px; border-radius: 50%; background: var(--accent); color: white; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .user-name { color: white; font-size: 13px; font-weight: 500; max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* ── Session bar ── */
+  .session-bar { background: var(--ink2); padding: 12px 20px; display: flex; align-items: center; gap: 10px; }
+  .session-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.8)} }
+  .session-input { background: transparent; border: none; color: white; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; flex: 1; outline: none; }
+  .session-input::placeholder { color: rgba(255,255,255,0.35); font-weight: 300; }
+
+  .main { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+
+  /* ── Card ── */
+  .card { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+  .card-header { padding: 14px 18px 10px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
+  .card-icon { font-size: 16px; }
+  .card-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--text2); }
+  .card-body { padding: 16px 18px; }
+
+  /* ── Textarea ── */
+  .note-area { width: 100%; min-height: 120px; border: none; outline: none; font-family: 'DM Sans', sans-serif; font-size: 16px; line-height: 1.6; color: var(--text); resize: none; background: transparent; }
+  .note-area::placeholder { color: #bbb; font-weight: 300; }
+
+  /* ── Boutons ── */
+  .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .btn { border: none; border-radius: 12px; padding: 16px 12px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 6px; transition: transform 0.15s, opacity 0.15s; -webkit-user-select: none; }
+  .btn:active { transform: scale(0.96); opacity: 0.85; }
+  .btn-icon { font-size: 24px; }
+  .btn-dictate { background: var(--accent); color: white; grid-column: 1 / -1; flex-direction: row; justify-content: center; padding: 18px; font-size: 16px; border-radius: 14px; }
+  .btn-dictate.recording { background: #c0392b; animation: recordPulse 1s infinite; }
+  @keyframes recordPulse { 0%,100%{box-shadow:0 0 0 0 rgba(233,69,96,.4)} 50%{box-shadow:0 0 0 10px rgba(233,69,96,0)} }
+  .btn-photo { background: var(--surface2); color: var(--text); border: 1.5px solid var(--border); }
+  .btn-save { background: var(--ink); color: white; }
+  .btn-save:disabled { opacity: 0.4; }
+
+  /* ── Photos multi ── */
+  .photos-grid { display: none; margin-top: 12px; flex-direction: column; gap: 10px; }
+  .photos-grid.has-photos { display: flex; }
+  .photo-item { border: 1.5px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--surface3); }
+  .photo-item-top { position: relative; }
+  .photo-item-top img { width: 100%; max-height: 160px; object-fit: cover; display: block; }
+  .photo-item-badge { position: absolute; top: 8px; left: 8px; background: rgba(26,26,46,.75); color: white; font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 20px; }
+  .photo-remove { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,.6); color: white; border: none; border-radius: 50%; width: 28px; height: 28px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .photo-caption { width: 100%; border: none; border-top: 1px solid var(--border); padding: 10px 12px; font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--text); outline: none; background: transparent; }
+  .photo-caption::placeholder { color: #bbb; }
+  .photo-ocr-bar { display: flex; gap: 6px; padding: 8px 10px; border-top: 1px solid var(--border); background: var(--surface2); }
+  .btn-ocr { flex: 1; border: none; border-radius: 8px; padding: 8px 6px; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; }
+  .btn-ocr-fast { background: var(--surface3); color: var(--text); border: 1.5px solid var(--border); }
+  .btn-ocr-precise { background: var(--ink); color: white; }
+  .btn-ocr:disabled { opacity: .4; cursor: wait; }
+  .ocr-result { padding: 8px 12px; font-size: 12px; color: var(--text2); background: #fffbf0; border-top: 1px solid #f5e6a3; line-height: 1.5; display: none; }
+  .ocr-result.visible { display: block; }
+  .ocr-inject-btn { display: inline-block; margin-top: 6px; padding: 4px 12px; background: var(--accent); color: white; border: none; border-radius: 20px; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; }
+
+  /* ── Notes du jour ── */
+  .notes-list { display: flex; flex-direction: column; }
+  .note-item { padding: 14px 18px; border-bottom: 1px solid var(--border); }
+  .note-item:last-child { border-bottom: none; }
+  .note-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .note-time { font-size: 11px; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: .5px; }
+  .note-session { font-size: 11px; color: var(--text2); background: var(--surface3); padding: 2px 8px; border-radius: 20px; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .note-text { font-size: 14px; line-height: 1.5; color: var(--text); }
+  .empty-state { padding: 32px 18px; text-align: center; color: var(--text2); font-size: 14px; }
+  .empty-icon { font-size: 32px; margin-bottom: 8px; }
+
+  /* ── Participants ── */
+  .users-today { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px 18px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .users-today-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--text2); width: 100%; }
+  .user-chip { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 500; }
+  .user-chip-avatar { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: white; flex-shrink: 0; }
+
+  /* ── Bouton rapport ── */
+  .btn-report { background: linear-gradient(135deg, var(--accent2), #e67e22); color: white; width: 100%; border: none; border-radius: 14px; padding: 18px; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
+  .btn-report:active { transform: scale(.97); }
+
+  /* ── Admin link ── */
+  .admin-link { text-align: center; padding: 12px; font-size: 12px; color: var(--text2); }
+  .admin-link a { color: var(--text2); text-decoration: underline; }
+
+  /* ── Toast ── */
+  .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--ink); color: white; padding: 12px 24px; border-radius: 100px; font-size: 14px; font-weight: 500; transition: transform .3s cubic-bezier(.34,1.56,.64,1); z-index: 1000; white-space: nowrap; box-shadow: 0 8px 32px rgba(0,0,0,.25); }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.success { background: var(--success); }
+  .toast.error { background: var(--accent); }
+
+  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.3); border-top-color: white; border-radius: 50%; animation: spin .8s linear infinite; vertical-align: middle; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #photoInput { display: none; }
+</style>
+</head>
+<body>
+
+<!-- Écran configuration URL Apps Script (première fois) -->
+<div class="config-screen" id="configScreen">
+  <div class="config-logo">Congrès<span>Notes</span></div>
+  <div class="config-sub">Configuration initiale (une seule fois)</div>
+  <div class="config-label">URL de votre Apps Script</div>
+  <input class="config-input" id="scriptUrlInput" type="url"
+    placeholder="https://script.google.com/macros/s/..."
+    autocomplete="off" autocorrect="off" autocapitalize="off">
+  <div class="config-hint">
+    Copiez l'URL de déploiement de votre Apps Script.<br>
+    Elle commence par https://script.google.com/macros/s/
+  </div>
+  <button class="config-btn" id="configBtn">Enregistrer →</button>
+</div>
+
+<!-- Écran identification -->
+<div class="id-screen hidden" id="idScreen">
+  <div class="id-logo">Congrès<span>Notes</span></div>
+  <div class="id-sub">Identifiez-vous pour commencer</div>
+  <div class="id-label">Votre prénom et nom</div>
+  <input class="id-input" id="nameInput" type="text" placeholder="Ex : Marie Dupont"
+    autocomplete="off" autocorrect="off">
+  <button class="id-btn" id="identityBtn">Commencer →</button>
+  <div class="id-existing" id="existingUsers"></div>
+</div>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-top">
+    <div>
+      <div class="header-title">Congrès<span>Notes</span></div>
+      <div class="header-date" id="headerDate"></div>
+    </div>
+    <div class="user-badge" id="userBadge">
+      <div class="user-avatar" id="userAvatar">?</div>
+      <div class="user-name" id="userName">—</div>
+    </div>
+  </div>
+</div>
+
+<!-- Session bar -->
+<div class="session-bar">
+  <div class="session-dot"></div>
+  <input class="session-input" id="sessionInput" type="text"
+    placeholder="Nom de la session en cours..." autocomplete="off">
+</div>
+
+<div class="main">
+
+  <!-- Carte saisie -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-icon">✏️</span>
+      <span class="card-title">Nouvelle note</span>
+    </div>
+    <div class="card-body">
+      <textarea class="note-area" id="noteText"
+        placeholder="Dictez ou tapez vos notes ici..."></textarea>
+      <div class="photos-grid" id="photosGrid"></div>
+      <div class="actions" style="margin-top:16px;">
+        <button class="btn btn-dictate" id="dictateBtn">
+          <span class="btn-icon">🎙️</span>
+          <span id="dictateLabel">Dicter</span>
+        </button>
+        <button class="btn btn-photo" id="photoBtn">
+          <span class="btn-icon">📷</span>
+          <span id="photoLabel">Photo</span>
+        </button>
+        <button class="btn btn-save" id="saveBtn">
+          <span class="btn-icon">💾</span>
+          Enregistrer
+        </button>
+      </div>
+      <input type="file" id="photoInput" accept="image/*" capture="environment">
+    </div>
+  </div>
+
+  <!-- Rapport individuel -->
+  <button class="btn-report" id="reportBtn">
+    ✨ Mon rapport Claude
+  </button>
+
+  <!-- Participants aujourd'hui -->
+  <div class="users-today" id="usersToday">
+    <div class="users-today-label">👥 Participants aujourd'hui</div>
+    <div style="font-size:13px;color:var(--text2);">Chargement...</div>
+  </div>
+
+  <!-- Notes du jour -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-icon">📋</span>
+      <span class="card-title">Mes notes du jour</span>
+      <span id="noteCount" style="margin-left:auto;font-size:12px;color:var(--text2);"></span>
+    </div>
+    <div class="notes-list" id="notesList">
+      <div class="empty-state"><div class="empty-icon">🗒️</div>Aucune note pour l'instant</div>
+    </div>
+  </div>
+
+  <div class="admin-link">
+    <a href="admin.html">Page admin →</a>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Configuration ────────────────────────────────────────────────────
+let SCRIPT_URL = localStorage.getItem('congresNotesScriptUrl') || '';
+
+// ── État ─────────────────────────────────────────────────────────────
+let recognition = null, isRecording = false;
+let currentPhotos = [], todayNotes = [];
+let currentUser = null;
+
+const USER_COLORS = ['#e94560','#3498db','#27ae60','#9b59b6','#f39c12','#1abc9c','#e67e22','#e74c3c'];
+function colorForUser(name) { let h=0; for(let c of name) h=c.charCodeAt(0)+((h<<5)-h); return USER_COLORS[Math.abs(h)%USER_COLORS.length]; }
+function initials(name) { return name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2); }
+
+// ── API calls ────────────────────────────────────────────────────────
+async function apiGet(params) {
+  const url = SCRIPT_URL + '?' + new URLSearchParams(params);
+  const res = await fetch(url);
+  return res.json();
+}
+
+async function apiPost(action, data) {
+  const res = await fetch(SCRIPT_URL, {
+    method: 'POST',
+    body: JSON.stringify({ action, data }),
+    headers: { 'Content-Type': 'application/json' }
+  });
+  return res.json();
+}
+
+// ── Init ─────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  updateHeaderDate();
+
+  // Config URL
+  if (!SCRIPT_URL) {
+    document.getElementById('configScreen').classList.remove('hidden');
+  } else {
+    initApp();
+  }
+
+  // Bouton config
+  document.getElementById('configBtn').addEventListener('click', () => {
+    const url = document.getElementById('scriptUrlInput').value.trim();
+    if (!url.startsWith('https://script.google.com/macros/s/')) {
+      showToast('URL invalide', 'error'); return;
+    }
+    SCRIPT_URL = url;
+    localStorage.setItem('congresNotesScriptUrl', url);
+    document.getElementById('configScreen').classList.add('hidden');
+    initApp();
+  });
+
+  // Bouton identité
+  document.getElementById('identityBtn').addEventListener('click', confirmIdentity);
+  document.getElementById('nameInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') confirmIdentity();
+  });
+
+  // Bouton dicter
+  document.getElementById('dictateBtn').addEventListener('click', toggleDictation);
+
+  // Bouton photo
+  document.getElementById('photoBtn').addEventListener('click', () => {
+    document.getElementById('photoInput').click();
+  });
+  document.getElementById('photoInput').addEventListener('change', handlePhoto);
+
+  // Bouton sauvegarder
+  document.getElementById('saveBtn').addEventListener('click', saveNote);
+
+  // Bouton rapport
+  document.getElementById('reportBtn').addEventListener('click', prepareMyReport);
+
+  // Bouton changer utilisateur
+  document.getElementById('userBadge').addEventListener('click', changeUser);
+
+  // Session
+  document.getElementById('sessionInput').addEventListener('input', e => {
+    localStorage.setItem('congresNotesSession', e.target.value);
+  });
+  const savedSession = localStorage.getItem('congresNotesSession');
+  if (savedSession) document.getElementById('sessionInput').value = savedSession;
+});
+
+function updateHeaderDate() {
+  document.getElementById('headerDate').textContent =
+    new Date().toLocaleDateString('fr-FR', {weekday:'long',day:'numeric',month:'long',year:'numeric'});
+}
+
+function initApp() {
+  const saved = localStorage.getItem('congresNotesUser');
+  if (saved) { currentUser = saved; showApp(); }
+  else { showIdScreen(); }
+}
+
+// ── Identification ────────────────────────────────────────────────────
+async function showIdScreen() {
+  document.getElementById('idScreen').classList.remove('hidden');
+  try {
+    const res = await apiGet({ action: 'getKnownUsers' });
+    const users = res.users || [];
+    const div = document.getElementById('existingUsers');
+    if (users.length === 0) return;
+    div.innerHTML = '<div class="id-existing-title">Ou choisissez votre nom</div>' +
+      users.map(u => `<span class="id-user-chip" data-name="${u}">${u}</span>`).join('');
+    div.querySelectorAll('.id-user-chip').forEach(chip => {
+      chip.addEventListener('click', () => selectExistingUser(chip.dataset.name));
+    });
+  } catch(e) {}
+}
+
+function selectExistingUser(name) {
+  currentUser = name;
+  localStorage.setItem('congresNotesUser', name);
+  document.getElementById('idScreen').classList.add('hidden');
+  showApp();
+}
+
+function confirmIdentity() {
+  const name = document.getElementById('nameInput').value.trim();
+  if (!name || name.length < 2) { showToast('Entrez votre prénom et nom', 'error'); return; }
+  currentUser = name;
+  localStorage.setItem('congresNotesUser', name);
+  document.getElementById('idScreen').classList.add('hidden');
+  showApp();
+}
+
+function showApp() {
+  const color = colorForUser(currentUser);
+  document.getElementById('userAvatar').textContent = initials(currentUser);
+  document.getElementById('userAvatar').style.background = color;
+  document.getElementById('userName').textContent = currentUser.split(' ')[0];
+  loadTodayNotes();
+  loadTodayUsers();
+}
+
+function changeUser() {
+  if (!confirm('Changer d\'utilisateur ?')) return;
+  localStorage.removeItem('congresNotesUser');
+  currentUser = null;
+  showIdScreen();
+}
+
+// ── Participants ──────────────────────────────────────────────────────
+async function loadTodayUsers() {
+  try {
+    const res = await apiGet({ action: 'getTodayUsers' });
+    const users = res.users || [];
+    const div = document.getElementById('usersToday');
+    if (users.length === 0) {
+      div.innerHTML = '<div class="users-today-label">👥 Participants aujourd\'hui</div><div style="font-size:13px;color:var(--text2);">Aucun participant pour l\'instant</div>';
+      return;
+    }
+    div.innerHTML = '<div class="users-today-label">👥 Participants aujourd\'hui</div>' +
+      users.map(u => `
+        <div class="user-chip">
+          <div class="user-chip-avatar" style="background:${colorForUser(u)}">${initials(u)}</div>
+          ${u}
+        </div>`).join('');
+  } catch(e) {}
+}
+
+// ── Dictée vocale ────────────────────────────────────────────────────
+function toggleDictation() { isRecording ? stopDictation() : startDictation(); }
+
+function startDictation() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    showToast('Dictée non disponible sur ce navigateur', 'error');
+    return;
+  }
+  recognition = new SR();
+  recognition.lang = 'fr-FR';
+  recognition.continuous = true;
+  recognition.interimResults = true;
+
+  const ta = document.getElementById('noteText');
+  const base = ta.value;
+  let interim = '';
+
+  recognition.onresult = ev => {
+    let fin = '', tmp = '';
+    for (let i = ev.resultIndex; i < ev.results.length; i++) {
+      const t = ev.results[i][0].transcript;
+      ev.results[i].isFinal ? fin += t + ' ' : tmp += t;
+    }
+    if (fin) interim += fin;
+    ta.value = base + (base ? '\n' : '') + interim + tmp;
+  };
+  recognition.onerror = e => {
+    if (e.error !== 'aborted') showToast('Erreur dictée : ' + e.error, 'error');
+    stopDictation();
+  };
+  recognition.onend = () => { if (isRecording) recognition.start(); };
+  recognition.start();
+  isRecording = true;
+  document.getElementById('dictateBtn').classList.add('recording');
+  document.getElementById('dictateLabel').textContent = 'Arrêter';
+}
+
+function stopDictation() {
+  if (recognition) { recognition.onend = null; recognition.stop(); recognition = null; }
+  isRecording = false;
+  document.getElementById('dictateBtn').classList.remove('recording');
+  document.getElementById('dictateLabel').textContent = 'Dicter';
+}
+
+// ── Photos multi ──────────────────────────────────────────────────────
+function handlePhoto(ev) {
+  const file = ev.target.files[0]; if (!file) return;
+  const r = new FileReader();
+  r.onload = e => {
+    currentPhotos.push({ base64: e.target.result, caption: '' });
+    renderPhotosGrid();
+    document.getElementById('photoInput').value = '';
+    updatePhotoBtn();
+  };
+  r.readAsDataURL(file);
+}
+
+function renderPhotosGrid() {
+  const grid = document.getElementById('photosGrid');
+  if (currentPhotos.length === 0) { grid.classList.remove('has-photos'); grid.innerHTML = ''; return; }
+  grid.classList.add('has-photos');
+  grid.innerHTML = currentPhotos.map((p, i) => `
+    <div class="photo-item" id="photo-item-${i}">
+      <div class="photo-item-top">
+        <img src="${p.base64}" alt="photo ${i+1}">
+        <span class="photo-item-badge">📷 ${i+1}</span>
+        <button class="photo-remove" data-index="${i}">✕</button>
+      </div>
+      <input class="photo-caption" type="text" placeholder="Légende photo ${i+1}..."
+        value="${p.caption}" data-index="${i}">
+      <div class="photo-ocr-bar">
+        <button class="btn-ocr btn-ocr-fast" data-index="${i}" data-mode="fast">⚡ Rapide</button>
+        <button class="btn-ocr btn-ocr-precise" data-index="${i}" data-mode="precise">🎯 Précis</button>
+      </div>
+      <div class="ocr-result" id="ocr-result-${i}"></div>
+    </div>
+  `).join('');
+
+  grid.querySelectorAll('.photo-remove').forEach(btn => {
+    btn.addEventListener('click', () => removePhoto(parseInt(btn.dataset.index)));
+  });
+  grid.querySelectorAll('.photo-caption').forEach(input => {
+    input.addEventListener('input', () => updateCaption(parseInt(input.dataset.index), input.value));
+  });
+  grid.querySelectorAll('.btn-ocr').forEach(btn => {
+    btn.addEventListener('click', () => runOCR(parseInt(btn.dataset.index), btn.dataset.mode));
+  });
+}
+
+function updateCaption(i, v) { if (currentPhotos[i]) currentPhotos[i].caption = v; }
+function removePhoto(i) { currentPhotos.splice(i, 1); renderPhotosGrid(); updatePhotoBtn(); }
+function updatePhotoBtn() {
+  document.getElementById('photoLabel').textContent = currentPhotos.length > 0 ? `Photo (${currentPhotos.length})` : 'Photo';
+}
+function resetPhotos() { currentPhotos = []; renderPhotosGrid(); updatePhotoBtn(); }
+
+// ── OCR ───────────────────────────────────────────────────────────────
+async function runOCR(index, mode) {
+  const photo = currentPhotos[index]; if (!photo) return;
+  const rd = document.getElementById(`ocr-result-${index}`);
+  const btns = document.querySelectorAll(`[data-index="${index}"].btn-ocr`);
+  btns.forEach(b => b.disabled = true);
+  rd.className = 'ocr-result visible';
+  rd.innerHTML = '<span class="spinner" style="border-color:rgba(0,0,0,.2);border-top-color:#333"></span> Extraction...';
+
+  if (mode === 'fast') {
+    try {
+      const worker = await Tesseract.createWorker('fra+eng', 1, {
+        logger: m => { if (m.status === 'recognizing text') rd.innerHTML = `<span class="spinner" style="border-color:rgba(0,0,0,.2);border-top-color:#333"></span> ${Math.round(m.progress*100)}%`; }
+      });
+      const { data: { text } } = await worker.recognize(photo.base64);
+      await worker.terminate();
+      showOCRResult(index, text.trim(), rd, btns, 'Tesseract');
+    } catch(e) { rd.innerHTML = '❌ ' + e.message; btns.forEach(b => b.disabled = false); }
+  } else {
+    try {
+      const res = await apiPost('extractTextFromImage', { base64: photo.base64 });
+      if (res.success) showOCRResult(index, res.text.trim(), rd, btns, 'Google');
+      else { rd.innerHTML = '❌ ' + res.error; btns.forEach(b => b.disabled = false); }
+    } catch(e) { rd.innerHTML = '❌ ' + e.message; btns.forEach(b => b.disabled = false); }
+  }
+}
+
+function showOCRResult(index, text, rd, btns, source) {
+  btns.forEach(b => b.disabled = false);
+  if (!text) { rd.innerHTML = '⚠️ Aucun texte détecté.'; return; }
+  const esc = text.replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const btn = document.createElement('button');
+  btn.className = 'ocr-inject-btn';
+  btn.textContent = '➕ Injecter dans la note';
+  btn.addEventListener('click', () => injectOCRText(index, text));
+  rd.innerHTML = `<div style="font-size:11px;color:var(--text2);margin-bottom:4px;">Texte extrait (${source}) :</div>
+    <div style="white-space:pre-wrap;font-size:13px;color:var(--text)">${esc}</div>`;
+  rd.appendChild(btn);
+}
+
+function injectOCRText(i, text) {
+  const ta = document.getElementById('noteText');
+  const sep = ta.value.trim() ? '\n\n📷 Texte extrait photo ' + (i+1) + ' :\n' : '📷 Texte extrait photo ' + (i+1) + ' :\n';
+  ta.value = ta.value.trim() + sep + text;
+  showToast('✅ Texte injecté !', 'success');
+}
+
+// ── Sauvegarde ────────────────────────────────────────────────────────
+async function saveNote() {
+  if (!currentUser) { showToast('Identifiez-vous d\'abord', 'error'); return; }
+  const text = document.getElementById('noteText').value.trim();
+  if (!text) { showToast('Écrivez ou dictez une note d\'abord', 'error'); return; }
+  if (isRecording) stopDictation();
+
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+
+  const session = document.getElementById('sessionInput').value.trim() || 'Session sans titre';
+  const time = new Date().toTimeString().slice(0,5);
+
+  try {
+    const res = await apiPost('saveNote', { time, session, text, user: currentUser,
+      photos: currentPhotos.map(p => ({ base64: p.base64, caption: p.caption || '' })) });
+
+    btn.disabled = false; btn.innerHTML = '<span class="btn-icon">💾</span> Enregistrer';
+
+    if (res.success) {
+      const pc = currentPhotos.length;
+      showToast('✅ Note sauvegardée' + (pc ? ` + ${pc} photo(s)` : '') + ' !', 'success');
+      todayNotes.unshift({ time, session, text, photoCount: pc,
+        photoCaptions: currentPhotos.map(p => p.caption).filter(Boolean) });
+      renderNotes();
+      document.getElementById('noteText').value = '';
+      resetPhotos();
+      loadTodayUsers();
+    } else {
+      showToast('Erreur : ' + res.error, 'error');
+    }
+  } catch(e) {
+    btn.disabled = false; btn.innerHTML = '<span class="btn-icon">💾</span> Enregistrer';
+    showToast('Erreur de connexion', 'error');
+  }
+}
+
+// ── Notes du jour ─────────────────────────────────────────────────────
+async function loadTodayNotes() {
+  if (!currentUser) return;
+  try {
+    const res = await apiGet({ action: 'getTodayNotes', user: currentUser });
+    todayNotes = res.notes || [];
+    renderNotes();
+  } catch(e) {}
+}
+
+function renderNotes() {
+  const list = document.getElementById('notesList');
+  const count = document.getElementById('noteCount');
+  count.textContent = todayNotes.length + ' note' + (todayNotes.length > 1 ? 's' : '');
+  if (todayNotes.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">🗒️</div>Aucune note pour l\'instant</div>';
+    return;
+  }
+  list.innerHTML = todayNotes.map(n => `
+    <div class="note-item">
+      <div class="note-meta">
+        <span class="note-time">${n.time}</span>
+        <span class="note-session">${n.session}</span>
+      </div>
+      <div class="note-text">${n.text}</div>
+      ${n.photoCount > 0 ? `<div style="font-size:12px;color:var(--text2);margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;">
+        ${(n.photoCaptions||[]).map((c,i) => `<span style="background:var(--surface3);padding:2px 8px;border-radius:20px;">📷${i+1} ${c||'sans légende'}</span>`).join('')}
+        ${!n.photoCaptions?.length ? `<span style="background:var(--surface3);padding:2px 8px;border-radius:20px;">📷 ${n.photoCount} photo(s)</span>` : ''}
+      </div>` : ''}
+    </div>
+  `).join('');
+}
+
+// ── Rapport individuel ────────────────────────────────────────────────
+async function prepareMyReport() {
+  if (!currentUser) { showToast('Identifiez-vous d\'abord', 'error'); return; }
+  showToast('Préparation de votre rapport...');
+  try {
+    const res = await apiGet({ action: 'prepareReport', user: currentUser });
+    if (res.success) { window.open(res.url, '_blank'); showToast('✅ Rapport prêt !', 'success'); }
+    else showToast('Erreur : ' + res.error, 'error');
+  } catch(e) { showToast('Erreur de connexion', 'error'); }
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast' + (type ? ' '+type : ''); t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>
