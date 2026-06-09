@@ -204,8 +204,8 @@
 
 <script>
 // ── CONFIG — collez votre URL Apps Script ici ──────────────────────
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx4A_y9-xFPyueAK0VU_5f7p70JKrkdFKY_qYIRAwD5QCZV6UTlKO8HqAEYBp4Z_wRRzw/exec';
-// ──────────────────────────────────────────────────────────────────-
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby1Vqdcfofq1wBwv7roIdrjmdiIXwx5Jzp9qsxv4PQzQRzZoI7lT1-TGHeqpB286vZhgw/exec';
+// ──────────────────────────────────────────────────────────────────
 
 const USER_COLORS = ['#e94560','#3498db','#27ae60','#9b59b6','#f39c12','#1abc9c','#e67e22','#e74c3c'];
 function colorForUser(n) { let h=0; for(let c of n) h=c.charCodeAt(0)+((h<<5)-h); return USER_COLORS[Math.abs(h)%USER_COLORS.length]; }
@@ -213,12 +213,34 @@ function initials(n) { return n.split(' ').map(w=>w[0]).join('').toUpperCase().s
 
 let recognition=null, isRecording=false, currentPhotos=[], todayNotes=[], currentUser=null;
 
-// ── API ────────────────────────────────────────────────────────────
-async function api(params) {
-  const url = SCRIPT_URL + '?' + new URLSearchParams(params);
-  const res = await fetch(url, { redirect: 'follow' });
-  const text = await res.text();
-  try { return JSON.parse(text); } catch(e) { throw new Error('Réponse invalide : ' + text.slice(0,100)); }
+// ── API via JSONP (contourne les CORS) ────────────────────────────
+function api(params) {
+  return new Promise((resolve, reject) => {
+    const cbName = 'cb_' + Math.random().toString(36).slice(2);
+    const timeout = setTimeout(() => {
+      delete window[cbName];
+      document.getElementById(cbName)?.remove();
+      reject(new Error('Timeout'));
+    }, 30000);
+    window[cbName] = (data) => {
+      clearTimeout(timeout);
+      delete window[cbName];
+      document.getElementById(cbName)?.remove();
+      resolve(data);
+    };
+    params.callback = cbName;
+    const url = SCRIPT_URL + '?' + new URLSearchParams(params);
+    const script = document.createElement('script');
+    script.id = cbName;
+    script.src = url;
+    script.onerror = () => {
+      clearTimeout(timeout);
+      delete window[cbName];
+      script.remove();
+      reject(new Error('Erreur réseau'));
+    };
+    document.head.appendChild(script);
+  });
 }
 
 // ── Init ───────────────────────────────────────────────────────────
@@ -358,8 +380,7 @@ function renderPhotos() {
       </div>
       <input class="photo-caption" type="text" placeholder="Légende photo ${i+1}..." value="${p.caption}" data-i="${i}">
       <div class="photo-ocr-bar">
-        <button class="btn-ocr btn-ocr-fast" data-i="${i}" data-mode="fast">⚡ Rapide</button>
-        <button class="btn-ocr btn-ocr-precise" data-i="${i}" data-mode="precise">🎯 Précis</button>
+        <button class="btn-ocr btn-ocr-fast" data-i="${i}" data-mode="fast">⚡ Extraire le texte</button>
       </div>
       <div class="ocr-result" id="ocr-${i}"></div>
     </div>`).join('');
