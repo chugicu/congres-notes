@@ -207,7 +207,8 @@
 
 <script>
 // ── CONFIG — collez votre URL Apps Script ici ──────────────────────
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxW4oxlUtu1Up0Ewt0pRZLBnTaeDAITshxzs9P_jgK6knHFqWOclcJmDWCDnf71vU2DXw/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzrsD-poZPVpJJVW_sMzlWNODIodVfsinNVenxa-MbTNb3qPrSkDSnELHJbCYiOxvdHQw/exec
+';
 // ──────────────────────────────────────────────────────────────────
 
 const USER_COLORS = ['#e94560','#3498db','#27ae60','#9b59b6','#f39c12','#1abc9c','#e67e22','#e74c3c'];
@@ -529,21 +530,42 @@ async function saveNote() {
 
   const session = document.getElementById('sessionInput').value.trim() || 'Session sans titre';
   const time = new Date().toTimeString().slice(0,5);
-  const data = { time, session, text, user:currentUser, photos:currentPhotos.map(p=>({base64:p.base64,caption:p.caption||''})) };
+  const photos = currentPhotos.map(p=>({base64:p.base64, caption:p.caption||''}));
 
   try {
-    const res = await api({ action:'saveNote', data: encodeURIComponent(JSON.stringify(data)) });
+    // Étape 1 : sauvegarder texte via JSONP (sans photos)
+    const noteData = { time, session, text, user:currentUser, photos:[] };
+    const res = await api({ action:'saveNote', data: encodeURIComponent(JSON.stringify(noteData)) });
+
+    if (!res.success) {
+      btn.disabled=false; btn.innerHTML='<span class="btn-icon">💾</span> Enregistrer';
+      showToast('Erreur : '+(res.error||'inconnue'),'error');
+      return;
+    }
+
+    // Étape 2 : photos via POST no-cors (fire and forget)
+    if (photos.length > 0) {
+      for (const photo of photos) {
+        const photoData = { time, session, user:currentUser, caption:photo.caption, base64:photo.base64 };
+        fetch(SCRIPT_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action:'savePhoto', data: photoData })
+        }).catch(e => console.log('Photo send:', e));
+      }
+    }
+
     btn.disabled=false; btn.innerHTML='<span class="btn-icon">💾</span> Enregistrer';
-    if (res.success) {
-      const pc = currentPhotos.length;
-      showToast('✅ Note sauvegardée'+(pc?` + ${pc} photo(s)`:'')+' !','success');
-      todayNotes.unshift({time,session,text,photoCount:pc,photoCaptions:currentPhotos.map(p=>p.caption).filter(Boolean)});
-      renderNotes();
-      document.getElementById('noteText').value='';
-      resetPhotos();
-      loadTodayUsers();
-      incrementNoteCount();
-    } else showToast('Erreur : '+(res.error||'inconnue'),'error');
+    const pc = photos.length;
+    showToast('✅ Note sauvegardée'+(pc?' + photos en cours...':'')+' !','success');
+    todayNotes.unshift({time,session,text,photoCount:pc,photoCaptions:photos.map(p=>p.caption).filter(Boolean)});
+    renderNotes();
+    document.getElementById('noteText').value='';
+    resetPhotos();
+    loadTodayUsers();
+    incrementNoteCount();
+
   } catch(e) {
     btn.disabled=false; btn.innerHTML='<span class="btn-icon">💾</span> Enregistrer';
     showToast('Erreur de connexion','error');
@@ -635,3 +657,4 @@ function showToast(msg,type='') {
 </script>
 </body>
 </html>
+
