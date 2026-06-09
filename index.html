@@ -45,11 +45,13 @@
   .user-name { color:white; font-size:13px; font-weight:500; max-width:90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
   /* ── Session bar ── */
-  .session-bar { background:var(--ink2); padding:12px 20px; display:flex; align-items:center; gap:10px; }
+  .session-bar { background:var(--ink2); padding:14px 20px; display:flex; align-items:center; gap:10px; }
   .session-dot { width:8px; height:8px; border-radius:50%; background:var(--accent); flex-shrink:0; animation:pulse 2s infinite; }
   @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.8)} }
-  .session-input { background:transparent; border:none; color:white; font-family:'DM Sans',sans-serif; font-size:14px; font-weight:500; flex:1; outline:none; }
+  .session-input { background:transparent; border:none; color:white; font-family:'DM Sans',sans-serif; font-size:20px; font-weight:600; flex:1; outline:none; }
   .session-input::placeholder { color:rgba(255,255,255,0.35); font-weight:300; }
+  .session-mic { background:none; border:none; color:rgba(255,255,255,0.6); font-size:20px; cursor:pointer; padding:0 4px; flex-shrink:0; }
+  .session-mic.recording { color:var(--accent); animation:recordPulse 1s infinite; }
 
   .main { padding:20px; display:flex; flex-direction:column; gap:16px; }
 
@@ -156,11 +158,12 @@
 <div class="session-bar">
   <div class="session-dot"></div>
   <input class="session-input" id="sessionInput" type="text" placeholder="Nom de la session en cours..." autocomplete="off">
+  <button class="session-mic" id="sessionMicBtn" title="Dicter le nom de la session">🎙️</button>
 </div>
 
 <div class="main">
   <div class="card">
-    <div class="card-header"><span class="card-icon">✏️</span><span class="card-title">Nouvelle note</span></div>
+    <div class="card-header"><span class="card-icon">✏️</span><span class="card-title" id="noteTitle">Note 1</span></div>
     <div class="card-body">
       <textarea class="note-area" id="noteText" placeholder="Dictez ou tapez vos notes ici..."></textarea>
       <div class="photos-grid" id="photosGrid"></div>
@@ -204,7 +207,7 @@
 
 <script>
 // ── CONFIG — collez votre URL Apps Script ici ──────────────────────
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbycDC1_oOgwUb5pq-6UWXRjdzXZmAqmQWnQh_hGUmS0FyZmYeSMqzjhm3syhSbqBjMd0g/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxW4oxlUtu1Up0Ewt0pRZLBnTaeDAITshxzs9P_jgK6knHFqWOclcJmDWCDnf71vU2DXw/exec';
 // ──────────────────────────────────────────────────────────────────
 
 const USER_COLORS = ['#e94560','#3498db','#27ae60','#9b59b6','#f39c12','#1abc9c','#e67e22','#e74c3c'];
@@ -260,10 +263,67 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('photoInput').addEventListener('change', handlePhoto);
   document.getElementById('saveBtn').addEventListener('click', saveNote);
   document.getElementById('reportBtn').addEventListener('click', prepareMyReport);
-  document.getElementById('sessionInput').addEventListener('input', e => localStorage.setItem('congresNotesSession', e.target.value));
+  document.getElementById('sessionInput').addEventListener('input', e => {
+    localStorage.setItem('congresNotesSession', e.target.value);
+    updateNoteTitle();
+  });
   const ss = localStorage.getItem('congresNotesSession');
   if (ss) document.getElementById('sessionInput').value = ss;
+
+  // Dictée du nom de session
+  document.getElementById('sessionMicBtn').addEventListener('click', toggleSessionDictation);
 });
+
+// ── Compteur de notes ──────────────────────────────────────────────
+let sessionNoteCount = 0;
+
+function updateNoteTitle() {
+  const title = document.getElementById('noteTitle');
+  if (title) title.textContent = 'Note ' + (sessionNoteCount + 1);
+}
+
+function incrementNoteCount() {
+  sessionNoteCount++;
+  updateNoteTitle();
+}
+
+// ── Dictée nom de session ──────────────────────────────────────────
+let sessionRecognition = null;
+let isSessionRecording = false;
+
+function toggleSessionDictation() {
+  isSessionRecording ? stopSessionDictation() : startSessionDictation();
+}
+
+function startSessionDictation() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { showToast('Utilisez Safari pour la dictée', 'error'); return; }
+  sessionRecognition = new SR();
+  sessionRecognition.lang = 'fr-FR';
+  sessionRecognition.continuous = false;
+  sessionRecognition.interimResults = false;
+  sessionRecognition.onresult = ev => {
+    const text = ev.results[0][0].transcript;
+    const input = document.getElementById('sessionInput');
+    input.value = text;
+    localStorage.setItem('congresNotesSession', text);
+    updateNoteTitle();
+    stopSessionDictation();
+  };
+  sessionRecognition.onerror = () => stopSessionDictation();
+  sessionRecognition.onend = () => stopSessionDictation();
+  sessionRecognition.start();
+  isSessionRecording = true;
+  document.getElementById('sessionMicBtn').classList.add('recording');
+  document.getElementById('sessionMicBtn').textContent = '⏹️';
+}
+
+function stopSessionDictation() {
+  if (sessionRecognition) { sessionRecognition.stop(); sessionRecognition = null; }
+  isSessionRecording = false;
+  document.getElementById('sessionMicBtn').classList.remove('recording');
+  document.getElementById('sessionMicBtn').textContent = '🎙️';
+}
 
 // ── Identification ─────────────────────────────────────────────────
 async function showIdScreen() {
@@ -459,6 +519,7 @@ async function saveNote() {
       document.getElementById('noteText').value='';
       resetPhotos();
       loadTodayUsers();
+      incrementNoteCount();
     } else showToast('Erreur : '+(res.error||'inconnue'),'error');
   } catch(e) {
     btn.disabled=false; btn.innerHTML='<span class="btn-icon">💾</span> Enregistrer';
@@ -496,12 +557,50 @@ function renderNotes() {
 // ── Rapport ────────────────────────────────────────────────────────
 async function prepareMyReport() {
   if (!currentUser) { showToast('Identifiez-vous d\'abord','error'); return; }
-  showToast('Préparation du rapport...');
+  const btn = document.getElementById('reportBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Génération...';
   try {
     const res = await api({ action:'prepareReport', user:currentUser });
-    if (res.success) { window.open(res.url,'_blank'); showToast('✅ Rapport prêt !','success'); }
+    btn.disabled = false;
+    btn.innerHTML = '✨ Mon rapport Claude';
+    if (res.success) showReportModal(res.url, res.docxUrl);
     else showToast('Erreur : '+(res.error||'inconnue'),'error');
-  } catch(e) { showToast('Erreur de connexion','error'); }
+  } catch(e) {
+    btn.disabled = false;
+    btn.innerHTML = '✨ Mon rapport Claude';
+    showToast('Erreur de connexion','error');
+  }
+}
+
+function showReportModal(docUrl, docxUrl) {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:500;display:flex;align-items:flex-end;justify-content:center;padding:20px;';
+  const modal = document.createElement('div');
+  modal.style.cssText = 'background:#fff;border-radius:20px;padding:24px;width:100%;max-width:400px;display:flex;flex-direction:column;gap:12px;';
+  modal.innerHTML = `
+    <div style="font-size:20px;font-weight:700;color:#1a1a2e;">✅ Rapport prêt !</div>
+    <div style="font-size:14px;color:#6b6b6b;line-height:1.5;">Votre rapport a été généré avec notes et photos.</div>
+    <button id="openDocBtn" style="background:#1a1a2e;color:white;border:none;border-radius:12px;padding:16px;font-family:DM Sans,sans-serif;font-size:15px;font-weight:600;cursor:pointer;">
+      📄 Ouvrir Google Doc
+    </button>
+    <button id="downloadDocxBtn" style="background:linear-gradient(135deg,#f5a623,#e67e22);color:white;border:none;border-radius:12px;padding:16px;font-family:DM Sans,sans-serif;font-size:15px;font-weight:600;cursor:pointer;">
+      ⬇️ Télécharger Word (.docx)
+    </button>
+    <button id="closeModalBtn" style="background:#f8f7f4;color:#6b6b6b;border:none;border-radius:12px;padding:12px;font-family:DM Sans,sans-serif;font-size:14px;cursor:pointer;">
+      Fermer
+    </button>
+  `;
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+  document.getElementById('openDocBtn').addEventListener('click', () => { window.open(docUrl,'_blank'); overlay.remove(); });
+  document.getElementById('downloadDocxBtn').addEventListener('click', () => {
+    const exportUrl = docxUrl || docUrl.replace('/edit','') + '/export?format=docx';
+    window.open(exportUrl,'_blank');
+    overlay.remove();
+  });
+  document.getElementById('closeModalBtn').addEventListener('click', () => overlay.remove());
+  overlay.addEventListener('click', e => { if(e.target===overlay) overlay.remove(); });
 }
 
 // ── Toast ──────────────────────────────────────────────────────────
