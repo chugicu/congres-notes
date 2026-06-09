@@ -423,8 +423,31 @@ function stopDictation() {
 function handlePhoto(ev) {
   const file = ev.target.files[0]; if (!file) return;
   const r = new FileReader();
-  r.onload = e => { currentPhotos.push({base64:e.target.result,caption:''}); renderPhotos(); document.getElementById('photoInput').value=''; updatePhotoBtn(); };
+  r.onload = e => {
+    compressImage(e.target.result, 800, 0.6).then(compressed => {
+      currentPhotos.push({base64: compressed, caption:''});
+      renderPhotos();
+      document.getElementById('photoInput').value='';
+      updatePhotoBtn();
+    });
+  };
   r.readAsDataURL(file);
+}
+
+function compressImage(base64, maxWidth, quality) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let w = img.width, h = img.height;
+      if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth; }
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.src = base64;
+  });
 }
 
 function renderPhotos() {
