@@ -1,0 +1,9 @@
+{
+  "name": "CongrèsNotes",
+  "short_name": "CongrèsNotes",
+  "start_url": "./index.html",
+  "display": "browser",
+  "background_color": "#1a1a2e",
+  "theme_color": "#1a1a2e",
+  "orientation": "portrait"
+}
