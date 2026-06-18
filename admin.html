@@ -3,35 +3,38 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1a1a2e">
 <title>CongrèsNotes — Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   :root { --ink:#1a1a2e; --accent:#e94560; --accent2:#f5a623; --surface:#fff; --surface2:#f8f7f4; --surface3:#eeecea; --border:#e0ddd8; --text:#2d2d2d; --text2:#6b6b6b; --success:#27ae60; }
   * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  html { -webkit-text-size-adjust:100%; }
   body { font-family:'DM Sans',sans-serif; background:var(--surface2); color:var(--text); min-height:100vh; padding-bottom:40px; }
-  .header { background:var(--ink); color:white; padding:52px 24px 24px; position:relative; overflow:hidden; }
+  .header { background:var(--ink); color:white; padding:max(24px,env(safe-area-inset-top)) 20px 22px; position:relative; overflow:hidden; }
   .header::before { content:''; position:absolute; top:-40px; right:-40px; width:180px; height:180px; border-radius:50%; background:rgba(233,69,96,0.15); }
-  .header-inner { position:relative; z-index:1; display:flex; align-items:flex-start; justify-content:space-between; }
-  .header-title { font-family:'DM Serif Display',serif; font-size:24px; }
+  .header-inner { position:relative; z-index:1; display:flex; align-items:flex-start; justify-content:space-between; gap:10px; flex-wrap:wrap; max-width:700px; margin:0 auto; }
+  .header-title { font-family:'DM Serif Display',serif; font-size:22px; }
   .header-title span { color:var(--accent); }
   .header-sub { font-size:12px; color:rgba(255,255,255,.5); margin-top:4px; }
-  .back-link { color:rgba(255,255,255,.6); font-size:13px; text-decoration:none; }
-  .main { padding:20px; display:flex; flex-direction:column; gap:16px; }
+  .back-link { color:rgba(255,255,255,.6); font-size:13px; text-decoration:none; flex-shrink:0; padding-top:4px; }
+  .main { padding:16px; display:flex; flex-direction:column; gap:14px; max-width:700px; margin:0 auto; }
   .card { background:var(--surface); border-radius:16px; box-shadow:0 4px 24px rgba(26,26,46,.10); overflow:hidden; }
-  .card-header { padding:14px 18px 10px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px; }
+  .card-header { padding:14px 16px 10px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
   .card-title { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:1px; color:var(--text2); }
-  .card-body { padding:16px 18px; }
-  .date-filter { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-  .date-input { padding:10px 14px; border:1.5px solid var(--border); border-radius:10px; font-family:'DM Sans',sans-serif; font-size:15px; outline:none; flex:1; }
-  .btn-filter { padding:10px 18px; background:var(--ink); color:white; border:none; border-radius:10px; font-family:'DM Sans',sans-serif; font-size:14px; font-weight:600; cursor:pointer; }
-  .user-row { display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--border); }
+  .card-body { padding:16px; }
+  .filters-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .filter-group { display:flex; flex-direction:column; gap:6px; flex:1; min-width:140px; }
+  .filter-label { font-size:11px; font-weight:600; color:var(--text2); text-transform:uppercase; letter-spacing:.5px; }
+  .date-input, .select-input { padding:12px 14px; border:1.5px solid var(--border); border-radius:10px; font-family:'DM Sans',sans-serif; font-size:15px; outline:none; width:100%; background:white; -webkit-appearance:none; appearance:none; }
+  .btn-filter { padding:12px 18px; background:var(--ink); color:white; border:none; border-radius:10px; font-family:'DM Sans',sans-serif; font-size:14px; font-weight:600; cursor:pointer; white-space:nowrap; flex-shrink:0; align-self:flex-end; }
+  .user-row { display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--border); flex-wrap:wrap; }
   .user-row:last-child { border-bottom:none; }
   .user-avatar { width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:white; flex-shrink:0; }
-  .user-info { flex:1; }
+  .user-info { flex:1; min-width:120px; }
   .user-info-name { font-weight:600; font-size:15px; }
   .user-info-count { font-size:12px; color:var(--text2); margin-top:2px; }
-  .btn-user-report { background:var(--ink); color:white; border:none; border-radius:8px; padding:8px 14px; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap; }
+  .btn-user-report { background:var(--ink); color:white; border:none; border-radius:8px; padding:10px 14px; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap; }
   .btn-consolidated { background:linear-gradient(135deg,var(--accent2),#e67e22); color:white; width:100%; border:none; border-radius:14px; padding:18px; font-family:'DM Sans',sans-serif; font-size:15px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; }
   .btn-consolidated:disabled { opacity:.6; cursor:wait; }
   .empty-state { padding:32px 18px; text-align:center; color:var(--text2); font-size:14px; }
@@ -39,10 +42,22 @@
   .spinner { display:inline-block; width:16px; height:16px; border:2px solid rgba(255,255,255,.3); border-top-color:white; border-radius:50%; animation:spin .8s linear infinite; vertical-align:middle; }
   .spinner-dark { border-color:rgba(0,0,0,.15); border-top-color:#333; }
   @keyframes spin { to{transform:rotate(360deg)} }
-  .toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%) translateY(80px); background:var(--ink); color:white; padding:12px 24px; border-radius:100px; font-size:14px; font-weight:500; transition:transform .3s cubic-bezier(.34,1.56,.64,1); z-index:1000; white-space:nowrap; box-shadow:0 8px 32px rgba(0,0,0,.25); }
+  .toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%) translateY(80px); background:var(--ink); color:white; padding:12px 24px; border-radius:100px; font-size:14px; font-weight:500; transition:transform .3s cubic-bezier(.34,1.56,.64,1); z-index:1000; white-space:nowrap; box-shadow:0 8px 32px rgba(0,0,0,.25); max-width:90vw; overflow:hidden; text-overflow:ellipsis; }
   .toast.show { transform:translateX(-50%) translateY(0); }
   .toast.success { background:var(--success); }
   .toast.error { background:var(--accent); }
+
+  /* ── Gestion des congrès ── */
+  .congres-manage-list { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
+  .congres-manage-chip { background:var(--surface3); color:var(--text); padding:6px 14px; border-radius:20px; font-size:13px; font-weight:600; }
+  .congres-add-row { display:flex; gap:8px; }
+  .congres-add-input { flex:1; padding:12px 14px; border:1.5px solid var(--border); border-radius:10px; font-family:'DM Sans',sans-serif; font-size:14px; outline:none; min-width:0; }
+  .btn-add-congres { background:var(--ink); color:white; border:none; border-radius:10px; padding:0 18px; font-family:'DM Sans',sans-serif; font-size:14px; font-weight:600; cursor:pointer; white-space:nowrap; }
+
+  @media (max-width:480px) {
+    .filter-group { min-width:100%; }
+    .btn-filter { width:100%; align-self:stretch; }
+  }
 </style>
 </head>
 <body>
@@ -68,7 +83,7 @@
 
 <script>
 // ── CONFIG — collez votre URL Apps Script ici ──────────────────────
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxW4oxlUtu1Up0Ewt0pRZLBnTaeDAITshxzs9P_jgK6knHFqWOclcJmDWCDnf71vU2DXw/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx23ag7EKBKrwDa8ip4PQTuIY3I9VCZVLpvo3K330kb8VV4qvopmOoxjA3j139P9lhPJw/exec';
 // ──────────────────────────────────────────────────────────────────
 
 const USER_COLORS = ['#e94560','#3498db','#27ae60','#9b59b6','#f39c12','#1abc9c','#e67e22','#e74c3c'];
@@ -76,7 +91,9 @@ function colorForUser(n) { let h=0; for(let c of n) h=c.charCodeAt(0)+((h<<5)-h)
 function initials(n) { return n.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2); }
 
 let allUsers = [];
+let knownCongres = [];
 let selectedDate = new Date().toISOString().slice(0,10);
+let selectedCongres = 'Tous';
 
 function api(params) {
   return new Promise((resolve, reject) => {
@@ -123,43 +140,59 @@ async function initAdmin() {
         </div>`;
       return;
     }
-    loadAdminData(selectedDate);
+    const congresRes = await api({ action: 'getKnownCongres' });
+    knownCongres = (congresRes.success && congresRes.congres) ? congresRes.congres : [];
+    loadAdminData(selectedDate, selectedCongres);
   } catch(e) {
     showToast('Erreur de connexion', 'error');
   }
 }
 
-async function loadAdminData(date) {
+async function loadAdminData(date, congres) {
   document.getElementById('mainContent').innerHTML = `
     <div style="text-align:center;padding:40px;">
       <div class="spinner spinner-dark" style="width:24px;height:24px;"></div>
     </div>`;
   try {
-    const res = await api({ action: 'getAdminData', date });
-    renderAdmin(res, date);
+    const res = await api({ action: 'getAdminData', date, congres: congres === 'Tous' ? '' : congres });
+    renderAdmin(res, date, congres);
   } catch(e) { showToast('Erreur chargement', 'error'); }
 }
 
-function renderAdmin(data, date) {
+function renderAdmin(data, date, congres) {
   allUsers = data.users || [];
+  const congresOptions = ['Tous', ...knownCongres];
+
   document.getElementById('mainContent').innerHTML = `
     <div class="card">
-      <div class="card-header"><span class="card-title">📅 Date</span></div>
+      <div class="card-header"><span class="card-title">🔎 Filtres</span></div>
       <div class="card-body">
-        <div class="date-filter">
-          <input class="date-input" type="date" id="dateInput" value="${date}">
+        <div class="filters-row">
+          <div class="filter-group">
+            <span class="filter-label">Date</span>
+            <input class="date-input" type="date" id="dateInput" value="${date}">
+          </div>
+          <div class="filter-group">
+            <span class="filter-label">Congrès</span>
+            <select class="select-input" id="congresSelect">
+              ${congresOptions.map(c => `<option value="${c}" ${c===congres?'selected':''}>${c}</option>`).join('')}
+            </select>
+          </div>
           <button class="btn-filter" id="loadBtn">Charger</button>
         </div>
       </div>
     </div>
-    <button class="btn-consolidated" id="consolidatedBtn">
-      📊 Générer la synthèse consolidée
+
+    <button class="btn-consolidated" id="consolidatedBtn" ${congres==='Tous'?'disabled':''}>
+      📊 Générer la synthèse consolidée${congres!=='Tous' ? ' — '+congres : ''}
     </button>
+    ${congres==='Tous' ? '<div style="font-size:12px;color:var(--text2);text-align:center;margin-top:-6px;">Choisissez un congrès précis pour générer sa synthèse</div>' : ''}
+
     <div class="card">
       <div class="card-header"><span class="card-title">👥 Participants — ${allUsers.length} utilisateur(s)</span></div>
       <div class="card-body">
         ${allUsers.length === 0
-          ? '<div class="empty-state"><div class="empty-icon">🗒️</div>Aucune note pour cette date.</div>'
+          ? '<div class="empty-state"><div class="empty-icon">🗒️</div>Aucune note pour ces filtres.</div>'
           : allUsers.map(u => `
             <div class="user-row">
               <div class="user-avatar" style="background:${colorForUser(u.name)}">${initials(u.name)}</div>
@@ -171,11 +204,25 @@ function renderAdmin(data, date) {
             </div>`).join('')
         }
       </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="card-title">🏷️ Gérer les congrès</span></div>
+      <div class="card-body">
+        <div class="congres-manage-list" id="congresManageList">
+          ${knownCongres.map(c => `<span class="congres-manage-chip">${c}</span>`).join('')}
+        </div>
+        <div class="congres-add-row">
+          <input class="congres-add-input" id="newCongresInput" type="text" placeholder="Ajouter un congrès (ex : ESC)" autocomplete="off">
+          <button class="btn-add-congres" id="addCongresBtn">➕ Ajouter</button>
+        </div>
+      </div>
     </div>`;
 
   document.getElementById('loadBtn').addEventListener('click', () => {
     selectedDate = document.getElementById('dateInput').value;
-    loadAdminData(selectedDate);
+    selectedCongres = document.getElementById('congresSelect').value;
+    loadAdminData(selectedDate, selectedCongres);
   });
 
   document.getElementById('consolidatedBtn').addEventListener('click', generateConsolidated);
@@ -183,30 +230,51 @@ function renderAdmin(data, date) {
   document.querySelectorAll('.btn-user-report').forEach(btn => {
     btn.addEventListener('click', () => generateUserReport(btn.dataset.name));
   });
+
+  document.getElementById('addCongresBtn').addEventListener('click', addNewCongres);
+  document.getElementById('newCongresInput').addEventListener('keydown', e => { if(e.key==='Enter') addNewCongres(); });
 }
 
 async function generateUserReport(userName) {
   showToast('Génération rapport de ' + userName.split(' ')[0] + '...');
   try {
-    const res = await api({ action: 'prepareReport', user: userName, date: selectedDate });
+    const res = await api({ action: 'prepareReport', user: userName, date: selectedDate, congres: selectedCongres === 'Tous' ? '' : selectedCongres });
     if (res.success) { window.open(res.url, '_blank'); showToast('✅ Rapport prêt !', 'success'); }
     else showToast('Erreur : ' + (res.error || 'inconnue'), 'error');
   } catch(e) { showToast('Erreur de connexion', 'error'); }
 }
 
 async function generateConsolidated() {
+  if (selectedCongres === 'Tous') { showToast('Choisissez un congrès précis', 'error'); return; }
   if (!allUsers.length) { showToast('Aucune note à consolider', 'error'); return; }
   const btn = document.getElementById('consolidatedBtn');
   btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Génération...';
   try {
-    const res = await api({ action: 'consolidated', date: selectedDate });
-    btn.disabled = false; btn.innerHTML = '📊 Générer la synthèse consolidée';
+    const res = await api({ action: 'consolidated', date: selectedDate, congres: selectedCongres });
+    btn.disabled = false; btn.innerHTML = '📊 Générer la synthèse consolidée — ' + selectedCongres;
     if (res.success) { window.open(res.url, '_blank'); showToast('✅ Synthèse prête !', 'success'); }
     else showToast('Erreur : ' + (res.error || 'inconnue'), 'error');
   } catch(e) {
-    btn.disabled = false; btn.innerHTML = '📊 Générer la synthèse consolidée';
+    btn.disabled = false; btn.innerHTML = '📊 Générer la synthèse consolidée — ' + selectedCongres;
     showToast('Erreur de connexion', 'error');
   }
+}
+
+async function addNewCongres() {
+  const input = document.getElementById('newCongresInput');
+  const name = input.value.trim();
+  if (!name || name.length < 2) { showToast('Entrez un nom de congrès', 'error'); return; }
+  try {
+    const res = await api({ action: 'addCongres', name });
+    if (res.success) {
+      knownCongres = res.congres || knownCongres;
+      input.value = '';
+      showToast('✅ Congrès ajouté', 'success');
+      renderAdmin({ users: allUsers }, selectedDate, selectedCongres);
+    } else {
+      showToast('Erreur : ' + (res.error || 'inconnue'), 'error');
+    }
+  } catch(e) { showToast('Erreur de connexion', 'error'); }
 }
 
 function showToast(msg, type='') {
