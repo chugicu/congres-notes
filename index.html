@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1a1a2e">
 <meta name="apple-mobile-web-app-title" content="CongrèsNotes">
+<link rel="manifest" href="manifest.json">
 <title>CongrèsNotes</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
@@ -20,11 +20,11 @@
   body { font-family:'DM Sans',sans-serif; background:var(--surface2); color:var(--text); min-height:100vh; padding-bottom:40px; }
 
   /* ── Écran identification ── */
-  .id-screen { position:fixed; inset:0; background:var(--ink); display:flex; flex-direction:column; align-items:center; justify-content:center; padding:32px; z-index:100; }
+  .id-screen { position:fixed; inset:0; background:var(--ink); display:flex; flex-direction:column; align-items:center; justify-content:center; padding:32px; z-index:100; overflow-y:auto; }
   .id-screen.hidden { display:none; }
   .id-logo { font-family:'DM Serif Display',serif; font-size:36px; color:white; margin-bottom:8px; }
   .id-logo span { color:var(--accent); }
-  .id-sub { color:rgba(255,255,255,0.5); font-size:14px; margin-bottom:40px; }
+  .id-sub { color:rgba(255,255,255,0.5); font-size:14px; margin-bottom:32px; }
   .id-label { color:rgba(255,255,255,0.7); font-size:13px; font-weight:500; align-self:flex-start; margin-bottom:8px; width:100%; max-width:320px; }
   .id-input { width:100%; max-width:320px; padding:16px; border:1.5px solid rgba(255,255,255,0.15); border-radius:12px; background:rgba(255,255,255,0.08); color:white; font-family:'DM Sans',sans-serif; font-size:18px; outline:none; margin-bottom:16px; }
   .id-input::placeholder { color:rgba(255,255,255,0.3); }
@@ -33,13 +33,25 @@
   .id-existing-title { color:rgba(255,255,255,0.4); font-size:12px; text-align:center; margin-bottom:10px; }
   .id-user-chip { display:inline-block; margin:4px; padding:8px 16px; background:rgba(255,255,255,0.1); color:white; border-radius:20px; font-size:14px; cursor:pointer; border:1.5px solid rgba(255,255,255,0.15); }
 
+  /* ── Écran sélection congrès ── */
+  .congres-step { width:100%; max-width:320px; margin-top:8px; }
+  .congres-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; }
+  .congres-chip { padding:14px 8px; background:rgba(255,255,255,0.08); border:1.5px solid rgba(255,255,255,0.15); border-radius:12px; color:white; font-family:'DM Sans',sans-serif; font-size:15px; font-weight:600; cursor:pointer; text-align:center; }
+  .congres-chip.selected { background:var(--accent); border-color:var(--accent); }
+  .congres-other-input { width:100%; padding:14px; border:1.5px solid rgba(255,255,255,0.15); border-radius:12px; background:rgba(255,255,255,0.08); color:white; font-family:'DM Sans',sans-serif; font-size:15px; outline:none; display:none; margin-bottom:14px; }
+  .congres-other-input.visible { display:block; }
+  .congres-confirm-btn { width:100%; padding:16px; background:var(--accent); color:white; border:none; border-radius:12px; font-family:'DM Sans',sans-serif; font-size:16px; font-weight:600; cursor:pointer; opacity:.4; pointer-events:none; }
+  .congres-confirm-btn.active { opacity:1; pointer-events:auto; }
+
   /* ── Header ── */
   .header { background:var(--ink); color:white; padding:52px 20px 20px; position:relative; overflow:hidden; }
   .header::before { content:''; position:absolute; top:-40px; right:-40px; width:180px; height:180px; border-radius:50%; background:rgba(233,69,96,0.15); }
-  .header-top { display:flex; align-items:flex-start; justify-content:space-between; position:relative; z-index:1; }
+  .header-top { display:flex; align-items:flex-start; justify-content:space-between; position:relative; z-index:1; gap:10px; flex-wrap:wrap; }
   .header-title { font-family:'DM Serif Display',serif; font-size:26px; letter-spacing:-0.5px; }
   .header-title span { color:var(--accent); }
   .header-date { font-size:12px; color:rgba(255,255,255,0.5); margin-top:3px; font-weight:300; }
+  .header-badges { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .congres-badge { display:flex; align-items:center; gap:6px; background:rgba(245,166,35,0.18); color:var(--accent2); border-radius:20px; padding:6px 12px; cursor:pointer; flex-shrink:0; font-size:12px; font-weight:600; white-space:nowrap; }
   .user-badge { display:flex; align-items:center; gap:6px; background:rgba(255,255,255,0.1); border-radius:20px; padding:6px 12px; cursor:pointer; flex-shrink:0; }
   .user-avatar { width:26px; height:26px; border-radius:50%; background:var(--accent); color:white; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
   .user-name { color:white; font-size:13px; font-weight:500; max-width:90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -48,12 +60,12 @@
   .session-bar { background:var(--ink2); padding:14px 20px; display:flex; align-items:center; gap:10px; }
   .session-dot { width:8px; height:8px; border-radius:50%; background:var(--accent); flex-shrink:0; animation:pulse 2s infinite; }
   @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.8)} }
-  .session-input { background:transparent; border:none; color:white; font-family:'DM Sans',sans-serif; font-size:20px; font-weight:600; flex:1; outline:none; }
+  .session-input { background:transparent; border:none; color:white; font-family:'DM Sans',sans-serif; font-size:20px; font-weight:600; flex:1; outline:none; min-width:0; }
   .session-input::placeholder { color:rgba(255,255,255,0.35); font-weight:300; }
   .session-mic { background:none; border:none; color:rgba(255,255,255,0.6); font-size:20px; cursor:pointer; padding:0 4px; flex-shrink:0; }
   .session-mic.recording { color:var(--accent); animation:recordPulse 1s infinite; }
 
-  .main { padding:20px; display:flex; flex-direction:column; gap:16px; }
+  .main { padding:20px; display:flex; flex-direction:column; gap:16px; max-width:600px; margin:0 auto; }
 
   /* ── Card ── */
   .card { background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; }
@@ -134,11 +146,23 @@
 <!-- Écran identification -->
 <div class="id-screen hidden" id="idScreen">
   <div class="id-logo">Congrès<span>Notes</span></div>
-  <div class="id-sub">Identifiez-vous pour commencer</div>
-  <div class="id-label">Votre prénom et nom</div>
-  <input class="id-input" id="nameInput" type="text" placeholder="Ex : Marie Dupont" autocomplete="off" autocorrect="off">
-  <button class="id-btn" id="identityBtn">Commencer →</button>
-  <div class="id-existing" id="existingUsers"></div>
+  <div class="id-sub" id="idSub">Identifiez-vous pour commencer</div>
+
+  <!-- Étape 1 : nom -->
+  <div id="idStepName">
+    <div class="id-label">Votre prénom et nom</div>
+    <input class="id-input" id="nameInput" type="text" placeholder="Ex : Marie Dupont" autocomplete="off" autocorrect="off">
+    <button class="id-btn" id="identityBtn">Continuer →</button>
+    <div class="id-existing" id="existingUsers"></div>
+  </div>
+
+  <!-- Étape 2 : congrès -->
+  <div id="idStepCongres" class="congres-step" style="display:none;">
+    <div class="id-label">Quel congrès suivez-vous ?</div>
+    <div class="congres-grid" id="congresGrid"></div>
+    <input class="congres-other-input" id="congresOtherInput" type="text" placeholder="Précisez le nom du congrès..." autocomplete="off" autocorrect="off">
+    <button class="congres-confirm-btn" id="congresConfirmBtn">Commencer →</button>
+  </div>
 </div>
 
 <!-- Header -->
@@ -148,9 +172,12 @@
       <div class="header-title">Congrès<span>Notes</span></div>
       <div class="header-date" id="headerDate"></div>
     </div>
-    <div class="user-badge" id="userBadge">
-      <div class="user-avatar" id="userAvatar">?</div>
-      <div class="user-name" id="userName">—</div>
+    <div class="header-badges">
+      <div class="congres-badge" id="congresBadge">🏷️ —</div>
+      <div class="user-badge" id="userBadge">
+        <div class="user-avatar" id="userAvatar">?</div>
+        <div class="user-name" id="userName">—</div>
+      </div>
     </div>
   </div>
 </div>
@@ -178,7 +205,7 @@
           <span class="btn-icon">💾</span>Enregistrer
         </button>
       </div>
-      <input type="file" id="photoInput" accept="image/*" capture="environment">
+      <input type="file" id="photoInput" accept="image/*">
     </div>
   </div>
 
@@ -207,14 +234,18 @@
 
 <script>
 // ── CONFIG — collez votre URL Apps Script ici ──────────────────────
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzrsD-poZPVpJJVW_sMzlWNODIodVfsinNVenxa-MbTNb3qPrSkDSnELHJbCYiOxvdHQw/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx23ag7EKBKrwDa8ip4PQTuIY3I9VCZVLpvo3K330kb8VV4qvopmOoxjA3j139P9lhPJw/exec';
 // ──────────────────────────────────────────────────────────────────
 
+const KNOWN_CONGRES_FALLBACK = ['SRLF','SFAR','JNI'];
 const USER_COLORS = ['#e94560','#3498db','#27ae60','#9b59b6','#f39c12','#1abc9c','#e67e22','#e74c3c'];
 function colorForUser(n) { let h=0; for(let c of n) h=c.charCodeAt(0)+((h<<5)-h); return USER_COLORS[Math.abs(h)%USER_COLORS.length]; }
 function initials(n) { return n.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2); }
 
-let recognition=null, isRecording=false, currentPhotos=[], todayNotes=[], currentUser=null;
+let recognition=null, isRecording=false, currentPhotos=[], todayNotes=[], currentUser=null, currentCongres=null;
+let knownCongresList = [];
+let pendingNameForCongres = null;
+let selectedCongresChip = null;
 
 // ── API via JSONP (contourne les CORS) ────────────────────────────
 function api(params) {
@@ -251,13 +282,27 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('headerDate').textContent =
     new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
 
-  const saved = localStorage.getItem('congresNotesUser');
-  if (saved) { currentUser = saved; showApp(); }
-  else showIdScreen();
+  const savedUser = localStorage.getItem('congresNotesUser');
+  const savedCongres = localStorage.getItem('congresNotesCongres');
+
+  if (savedUser && savedCongres) {
+    // Toujours redemander le congrès à chaque connexion, mais présélectionné
+    currentUser = savedUser;
+    showIdScreenCongresOnly(savedCongres);
+  } else if (savedUser) {
+    currentUser = savedUser;
+    showIdScreenCongresOnly(null);
+  } else {
+    showIdScreen();
+  }
 
   document.getElementById('identityBtn').addEventListener('click', confirmIdentity);
   document.getElementById('nameInput').addEventListener('keydown', e => { if(e.key==='Enter') confirmIdentity(); });
+  document.getElementById('congresConfirmBtn').addEventListener('click', confirmCongres);
+  document.getElementById('congresOtherInput').addEventListener('input', onCongresOtherInput);
+  document.getElementById('congresOtherInput').addEventListener('keydown', e => { if(e.key==='Enter') confirmCongres(); });
   document.getElementById('userBadge').addEventListener('click', changeUser);
+  document.getElementById('congresBadge').addEventListener('click', changeCongres);
   document.getElementById('dictateBtn').addEventListener('click', toggleDictation);
   document.getElementById('photoBtn').addEventListener('click', () => document.getElementById('photoInput').click());
   document.getElementById('photoInput').addEventListener('change', handlePhoto);
@@ -325,9 +370,12 @@ function stopSessionDictation() {
   document.getElementById('sessionMicBtn').textContent = '🎙️';
 }
 
-// ── Identification ─────────────────────────────────────────────────
+// ── Identification : étape 1 (nom) ───────────────────────────────────
 async function showIdScreen() {
   document.getElementById('idScreen').classList.remove('hidden');
+  document.getElementById('idSub').textContent = 'Identifiez-vous pour commencer';
+  document.getElementById('idStepName').style.display = 'block';
+  document.getElementById('idStepCongres').style.display = 'none';
   try {
     const res = await api({ action: 'getKnownUsers' });
     const users = res.users || [];
@@ -336,28 +384,102 @@ async function showIdScreen() {
     div.innerHTML = '<div class="id-existing-title">Ou choisissez votre nom</div>' +
       users.map(u => `<span class="id-user-chip" data-name="${u}">${u}</span>`).join('');
     div.querySelectorAll('.id-user-chip').forEach(c =>
-      c.addEventListener('click', () => selectUser(c.dataset.name)));
+      c.addEventListener('click', () => { confirmName(c.dataset.name); }));
   } catch(e) {}
-}
-
-function selectUser(name) {
-  currentUser = name;
-  localStorage.setItem('congresNotesUser', name);
-  document.getElementById('idScreen').classList.add('hidden');
-  showApp();
 }
 
 function confirmIdentity() {
   const name = document.getElementById('nameInput').value.trim();
   if (!name || name.length < 2) { showToast('Entrez votre prénom et nom', 'error'); return; }
-  selectUser(name);
+  confirmName(name);
+}
+
+function confirmName(name) {
+  currentUser = name;
+  localStorage.setItem('congresNotesUser', name);
+  showIdScreenCongresOnly(localStorage.getItem('congresNotesCongres'));
+}
+
+// ── Identification : étape 2 (congrès) — toujours redemandée, présélectionnée ──
+async function showIdScreenCongresOnly(preselected) {
+  document.getElementById('idScreen').classList.remove('hidden');
+  document.getElementById('idSub').textContent = 'Bonjour ' + currentUser.split(' ')[0] + ' 👋';
+  document.getElementById('idStepName').style.display = 'none';
+  document.getElementById('idStepCongres').style.display = 'block';
+  selectedCongresChip = null;
+  document.getElementById('congresOtherInput').value = '';
+  document.getElementById('congresOtherInput').classList.remove('visible');
+  document.getElementById('congresConfirmBtn').classList.remove('active');
+
+  try {
+    const res = await api({ action: 'getKnownCongres' });
+    knownCongresList = (res.success && res.congres && res.congres.length) ? res.congres : KNOWN_CONGRES_FALLBACK;
+  } catch(e) {
+    knownCongresList = KNOWN_CONGRES_FALLBACK;
+  }
+  renderCongresGrid(preselected);
+}
+
+function renderCongresGrid(preselected) {
+  const grid = document.getElementById('congresGrid');
+  const options = [...knownCongresList, 'Autre'];
+  grid.innerHTML = options.map(c => `<div class="congres-chip" data-name="${c}">${c}</div>`).join('');
+  grid.querySelectorAll('.congres-chip').forEach(chip => chip.addEventListener('click', () => selectCongresChip(chip.dataset.name)));
+
+  if (preselected && knownCongresList.includes(preselected)) {
+    selectCongresChip(preselected);
+  } else if (preselected) {
+    // Préselection venait d'un "Autre" précédent
+    selectCongresChip('Autre');
+    document.getElementById('congresOtherInput').value = preselected;
+    onCongresOtherInput();
+  }
+}
+
+function selectCongresChip(name) {
+  selectedCongresChip = name;
+  document.querySelectorAll('.congres-chip').forEach(c => c.classList.toggle('selected', c.dataset.name === name));
+  const otherInput = document.getElementById('congresOtherInput');
+  if (name === 'Autre') {
+    otherInput.classList.add('visible');
+    onCongresOtherInput();
+  } else {
+    otherInput.classList.remove('visible');
+    document.getElementById('congresConfirmBtn').classList.add('active');
+  }
+}
+
+function onCongresOtherInput() {
+  const val = document.getElementById('congresOtherInput').value.trim();
+  document.getElementById('congresConfirmBtn').classList.toggle('active', val.length >= 2);
+}
+
+async function confirmCongres() {
+  let finalCongres = selectedCongresChip;
+  if (selectedCongresChip === 'Autre') {
+    finalCongres = document.getElementById('congresOtherInput').value.trim();
+    if (!finalCongres || finalCongres.length < 2) { showToast('Précisez le nom du congrès', 'error'); return; }
+    // Ajouter à la liste connue côté serveur pour les futurs utilisateurs
+    try { await api({ action: 'addCongres', name: finalCongres }); } catch(e) {}
+  }
+  if (!finalCongres) { showToast('Choisissez un congrès', 'error'); return; }
+
+  currentCongres = finalCongres;
+  localStorage.setItem('congresNotesCongres', finalCongres);
+  document.getElementById('idScreen').classList.add('hidden');
+  showApp();
 }
 
 function changeUser() {
   if (!confirm('Changer d\'utilisateur ?')) return;
   localStorage.removeItem('congresNotesUser');
   currentUser = null;
+  currentCongres = null;
   showIdScreen();
+}
+
+function changeCongres() {
+  showIdScreenCongresOnly(currentCongres);
 }
 
 function showApp() {
@@ -365,6 +487,7 @@ function showApp() {
   document.getElementById('userAvatar').textContent = initials(currentUser);
   document.getElementById('userAvatar').style.background = color;
   document.getElementById('userName').textContent = currentUser.split(' ')[0];
+  document.getElementById('congresBadge').textContent = '🏷️ ' + currentCongres;
   loadTodayNotes();
   loadTodayUsers();
 }
@@ -372,7 +495,7 @@ function showApp() {
 // ── Participants ───────────────────────────────────────────────────
 async function loadTodayUsers() {
   try {
-    const res = await api({ action: 'getTodayUsers' });
+    const res = await api({ action: 'getTodayUsers', congres: currentCongres });
     const users = res.users || [];
     const div = document.getElementById('usersToday');
     if (!users.length) {
@@ -389,7 +512,7 @@ function toggleDictation() { isRecording ? stopDictation() : startDictation(); }
 
 function startDictation() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) { showToast('Dictée non disponible — utilisez Safari', 'error'); return; }
+  if (!SR) { showToast('Dictée non disponible — utilisez Safari ou Chrome', 'error'); return; }
   recognition = new SR();
   recognition.lang = 'fr-FR'; recognition.continuous = true; recognition.interimResults = true;
   const ta = document.getElementById('noteText');
@@ -519,7 +642,7 @@ function showOCRResult(i, text, rd, btns, source) {
 
 // ── Sauvegarde ─────────────────────────────────────────────────────
 async function saveNote() {
-  if (!currentUser) { showToast('Identifiez-vous d\'abord','error'); return; }
+  if (!currentUser || !currentCongres) { showToast('Identifiez-vous d\'abord','error'); return; }
   const text = document.getElementById('noteText').value.trim();
   if (!text) { showToast('Écrivez ou dictez une note d\'abord','error'); return; }
   if (isRecording) stopDictation();
@@ -533,7 +656,7 @@ async function saveNote() {
 
   try {
     // Étape 1 : sauvegarder texte via JSONP (sans photos)
-    const noteData = { time, session, text, user:currentUser, photos:[] };
+    const noteData = { time, session, text, user:currentUser, congres:currentCongres, photos:[] };
     const res = await api({ action:'saveNote', data: encodeURIComponent(JSON.stringify(noteData)) });
 
     if (!res.success) {
@@ -545,7 +668,7 @@ async function saveNote() {
     // Étape 2 : photos via POST no-cors (fire and forget)
     if (photos.length > 0) {
       for (const photo of photos) {
-        const photoData = { time, session, user:currentUser, caption:photo.caption, base64:photo.base64 };
+        const photoData = { time, session, user:currentUser, congres:currentCongres, caption:photo.caption, base64:photo.base64 };
         fetch(SCRIPT_URL, {
           method: 'POST',
           mode: 'no-cors',
@@ -576,7 +699,7 @@ async function saveNote() {
 async function loadTodayNotes() {
   if (!currentUser) return;
   try {
-    const res = await api({ action:'getTodayNotes', user:currentUser });
+    const res = await api({ action:'getTodayNotes', user:currentUser, congres:currentCongres });
     todayNotes = res.notes || [];
     renderNotes();
   } catch(e) {}
@@ -600,12 +723,12 @@ function renderNotes() {
 
 // ── Rapport ────────────────────────────────────────────────────────
 async function prepareMyReport() {
-  if (!currentUser) { showToast('Identifiez-vous d\'abord','error'); return; }
+  if (!currentUser || !currentCongres) { showToast('Identifiez-vous d\'abord','error'); return; }
   const btn = document.getElementById('reportBtn');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> Génération...';
   try {
-    const res = await api({ action:'prepareReport', user:currentUser });
+    const res = await api({ action:'prepareReport', user:currentUser, congres:currentCongres });
     btn.disabled = false;
     btn.innerHTML = '✨ Mon rapport Claude';
     if (res.success) showReportModal(res.url, res.docxUrl);
@@ -624,7 +747,7 @@ function showReportModal(docUrl, docxUrl) {
   modal.style.cssText = 'background:#fff;border-radius:20px;padding:24px;width:100%;max-width:400px;display:flex;flex-direction:column;gap:12px;';
   modal.innerHTML = `
     <div style="font-size:20px;font-weight:700;color:#1a1a2e;">✅ Rapport prêt !</div>
-    <div style="font-size:14px;color:#6b6b6b;line-height:1.5;">Votre rapport a été généré avec notes et photos.</div>
+    <div style="font-size:14px;color:#6b6b6b;line-height:1.5;">Votre rapport a été généré avec notes et photos intégrées au fil du texte.</div>
     <button id="openDocBtn" style="background:#1a1a2e;color:white;border:none;border-radius:12px;padding:16px;font-family:DM Sans,sans-serif;font-size:15px;font-weight:600;cursor:pointer;">
       📄 Ouvrir Google Doc
     </button>
@@ -656,4 +779,3 @@ function showToast(msg,type='') {
 </script>
 </body>
 </html>
-
